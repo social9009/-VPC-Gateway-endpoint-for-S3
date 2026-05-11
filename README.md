@@ -21,27 +21,36 @@
 ---
 ```mermaid
 flowchart TB
-    User["🖥️ Your Laptop"] -->|"SSH via public IP"| IGW["🌍 Internet Gateway"]
-    IGW --> EC2A["EC2-A Bastion<br/>Public Subnet<br/>10.100.0.x"]
+    User["🖥️ Your Laptop 🌐"] -->|"🔐 SSH via public IP"| IGW["🌍 Internet Gateway<br/>🟢 Public"]
 
-    subgraph VPC ["VPC-A · ap-south-1 (10.100.0.0/16)"]
-        subgraph Public ["Public Subnet 10.100.0.0/24"]
+    IGW --> EC2A["🟢 EC2-A Bastion<br/>Public Subnet<br/>10.100.0.x"]
+
+    subgraph VPC ["🌐 VPC-A · ap-south-1 (10.100.0.0/16)"]
+        subgraph Public ["🔓 Public Subnet 10.100.0.0/24"]
             EC2A
         end
-        subgraph Private ["Private Subnet 10.100.11.0/24"]
-            EC2B["EC2-B<br/>Private IP only<br/>IAM Role: S3ReadOnly"]
+        subgraph Private ["🔒 Private Subnet 10.100.11.0/24"]
+            EC2B["📦 EC2-B<br/>Private IP only<br/>🛡️ IAM: S3ReadOnly"]
         end
-        RT_Private["Private Route Table<br/>10.100.0.0/16 -> local<br/>pl-xxxx (S3 prefix) -> vpce-xxxx"]
-        GWEP["VPC Gateway Endpoint<br/>com.amazonaws.ap-south-1.s3"]
+        RT_Private["📋 Private Route Table<br/>✨ 10.100.0.0/16 → local<br/>✨ pl-xxxx (S3 prefix) → vpce-xxxx"]
+        GWEP["🔗 VPC Gateway Endpoint<br/>com.amazonaws.ap-south-1.s3<br/>🚀 Free"]
     end
 
-    EC2A -->|"SSH hop"| EC2B
-    EC2B -->|"S3 request"| RT_Private
-    RT_Private -->|"Prefix list match"| GWEP
-    GWEP -->|"AWS internal backbone"| S3["Amazon S3<br/>same region bucket"]
+    EC2A -->|"🚪 SSH hop"| EC2B
+    EC2B -->|"⬇️ S3 request"| RT_Private
+    RT_Private -.->|"✅ Prefix list match"| GWEP
+    GWEP -->|"⚡ AWS internal backbone<br/>━━━━━━━━━━━━━➡️"| S3["🗄️ Amazon S3<br/>📍 same region bucket<br/>✅ Success!"]
 
-    style GWEP fill:#0f172a,stroke:#0ff,stroke-width:2px
-    style S3 fill:#1b4d2e,stroke:#2ecc71,stroke-width:2px
+    style User fill:#aaffff,stroke:#0066cc,stroke-width:2px,color:#000
+    style IGW fill:#0a1a2a,stroke:#0ff,stroke-width:2px
+    style EC2A fill:#1e5775,stroke:#0ff,stroke-width:2px
+    style EC2B fill:#1e4a6e,stroke:#f76,stroke-width:2px
+    style RT_Private fill:#0b2b3b,stroke:#f1c40f,stroke-width:2px,stroke-dasharray:5 3
+    style GWEP fill:#0f172a,stroke:#0ff,stroke-width:3px
+    style S3 fill:#1b4d2e,stroke:#2ecc71,stroke-width:3px
+    style VPC fill:#102033,stroke:#28e1ff,stroke-width:2px
+    style Public fill:#10314b,stroke:#2dd4bf,stroke-width:1px
+    style Private fill:#0f2a3a,stroke:#f76,stroke-width:1px
 ```
 
 ## Architecture Overview
