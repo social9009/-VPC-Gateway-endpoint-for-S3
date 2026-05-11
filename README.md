@@ -1,4 +1,48 @@
 # AWS VPC Gateway Endpoint for S3 — Private S3 Access Without Internet
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=200&section=header&text=VPC%20Gateway%20Endpoint%20for%20S3&fontSize=45&fontAlignY=35&desc=Private%20S3%20Access%20Without%20Internet%20%7C%20Free%20%7C%20Secure&descAlignY=55&fontColor=fff&descSize=16" width="100%"/>
+
+# 🔐 VPC Gateway Endpoint for S3 — Private Access Without Internet
+
+[![AWS](https://img.shields.io/badge/AWS-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)](https://aws.amazon.com/s3/)
+[![VPC](https://img.shields.io/badge/VPC-FF6B35?style=for-the-badge&logo=amazonaws&logoColor=white)](#)
+[![S3](https://img.shields.io/badge/S3-569A31?style=for-the-badge&logo=amazons3&logoColor=white)](#)
+[![IAM](https://img.shields.io/badge/IAM-DD344C?style=for-the-badge&logo=amazonaws&logoColor=white)](#)
+
+> **Give EC2 instances in private subnets direct, private access to Amazon S3 — no NAT Gateway, no Internet Gateway, and no public IPs. All traffic stays on AWS's internal backbone, and it's completely free!**
+
+[![Level](https://img.shields.io/badge/Level-Intermediate%20%7C%20Advanced-brightgreen?style=flat-square)](#)
+[![Cost](https://img.shields.io/badge/Cost-Free%20(Endpoint)-blue?style=flat-square)](#)
+[![Security](https://img.shields.io/badge/Security-Private%20Subnet%20Lockdown-success?style=flat-square)](#)
+
+</div>
+
+---
+```mermaid
+flowchart TB
+    User["🖥️ Your Laptop"] -->|"SSH via public IP"| IGW["🌍 Internet Gateway"]
+    IGW --> EC2A["EC2-A Bastion<br/>Public Subnet<br/>10.100.0.x"]
+
+    subgraph VPC ["VPC-A · ap-south-1 (10.100.0.0/16)"]
+        subgraph Public ["Public Subnet 10.100.0.0/24"]
+            EC2A
+        end
+        subgraph Private ["Private Subnet 10.100.11.0/24"]
+            EC2B["EC2-B<br/>Private IP only<br/>IAM Role: S3ReadOnly"]
+        end
+        RT_Private["Private Route Table<br/>10.100.0.0/16 -> local<br/>pl-xxxx (S3 prefix) -> vpce-xxxx"]
+        GWEP["VPC Gateway Endpoint<br/>com.amazonaws.ap-south-1.s3"]
+    end
+
+    EC2A -->|"SSH hop"| EC2B
+    EC2B -->|"S3 request"| RT_Private
+    RT_Private -->|"Prefix list match"| GWEP
+    GWEP -->|"AWS internal backbone"| S3["Amazon S3<br/>same region bucket"]
+
+    style GWEP fill:#0f172a,stroke:#0ff,stroke-width:2px
+    style S3 fill:#1b4d2e,stroke:#2ecc71,stroke-width:2px
+```
 
 ## Architecture Overview
 
@@ -8,24 +52,24 @@ Your Laptop
     ▼
 Internet Gateway (IGW)
     │
-    ▼  ┌─────────────────────────────── AWS Region: ap-south-1 ────────────────────────┐
-       │                                                                                │
-       │  VPC-A  (10.100.0.0/16)                                                       │
-       │  ┌──────────────────────────────────────┐                                     │
-       │  │  Public Subnet  10.100.0.0/24         │                                     │
-       │  │  ┌──────────────────────────────────┐ │                                     │
-       │  │  │  EC2-A  │  Public + Private IP   │ │                                     │
-       │  │  │  (Bastion host)                  │ │                                     │
-       │  │  └──────────────────────────────────┘ │                                     │
+    ▼  ┌─────────────────────────────── AWS Region: ap-south-1 ────────────────────────--┐
+       │                                                                                 │
+       │  VPC-A  (10.100.0.0/16)                                                         │
+       │  ┌──────────────────────────────────────--┐                                     │
+       │  │  Public Subnet  10.100.0.0/24          │                                     │
+       │  │  ┌──────────────────────────────────┐  │                                     │
+       │  │  │  EC2-A  │  Public + Private IP   │  │                                     │
+       │  │  │  (Bastion host)                  │  │                                     │
+       │  │  └──────────────────────────────────┘  │                                     │
        │  │            │ SSH                       │                                     │
        │  │  Private Subnet  10.100.11.0/24        │                                     │
        │  │  ┌──────────────────────────────────┐  │                                     │
        │  │  │  EC2-B  │  Private IP only       │  │                                     │
        │  │  │  IAM Role: S3ReadOnly attached   │──┼──► VPC Gateway Endpoint ──► Amazon S3
        │  │  └──────────────────────────────────┘  │    (no internet, AWS backbone)      │
-       │  └──────────────────────────────────────┘ │                                     │
-       │                                            │                                     │
-       └────────────────────────────────────────────────────────────────────────────────┘
+       │  └──────────────────────────────────────--┘                                     │
+       │                                                                                 │
+       └────────────────────────────────────────────────────────────────────────────────-┘
 ```
 
 **Goal:** Allow EC2-B (private subnet, no internet access) to download files from Amazon S3 — WITHOUT a NAT Gateway, internet gateway route, or public internet exposure.
